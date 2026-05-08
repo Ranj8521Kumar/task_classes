@@ -30,14 +30,80 @@ async function getAnswerFromBackend({ studentClass, subject, question, image }) 
   }
 }
 
-function ImageIcon() {
+/* ── Icons ─────────────────────────────────────────── */
+function IconImage() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+  )
+}
+function IconCopy() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+    </svg>
+  )
+}
+function IconSend() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+  )
+}
+function IconSparkle() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
     </svg>
   )
 }
 
+/* ── Spinner ────────────────────────────────────────── */
+function Spinner() {
+  return (
+    <svg
+      width="15" height="15" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+      style={{ animation: 'spin 0.7s linear infinite' }}
+    >
+      <path d="M12 2a10 10 0 0110 10" />
+    </svg>
+  )
+}
+
+/* ── Shimmer skeleton ───────────────────────────────── */
+function Skeleton() {
+  return (
+    <div className="mt-5 space-y-3 fade-in">
+      <div className="shimmer-line h-3.5 w-11/12" />
+      <div className="shimmer-line h-3.5 w-10/12" />
+      <div className="shimmer-line h-3.5 w-8/12" />
+      <div className="shimmer-line h-3.5 w-11/12 mt-4" />
+      <div className="shimmer-line h-3.5 w-9/12" />
+      <div className="shimmer-line h-3.5 w-10/12" />
+    </div>
+  )
+}
+
+/* ── Field label ────────────────────────────────────── */
+function Label({ children }) {
+  return (
+    <span
+      className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest"
+      style={{ color: 'var(--ink-muted)', letterSpacing: '0.1em' }}
+    >
+      {children}
+    </span>
+  )
+}
+
+/* ── Main App ───────────────────────────────────────── */
 export default function App() {
   const [studentClass, setStudentClass] = useState('Class 8')
   const [subject, setSubject] = useState('Math')
@@ -86,7 +152,7 @@ export default function App() {
       setContent(result.content)
       setFinalAnswer(result.finalAnswer)
     } catch {
-      setError('Could not generate answer right now. Please try again.')
+      setError('Could not reach the server. Please try again.')
       setContent('')
       setFinalAnswer('')
     } finally {
@@ -94,22 +160,17 @@ export default function App() {
     }
   }
 
-  const clearAll = () => {
+  const resetAll = (keepSelectors = false) => {
     setQuestion('')
     removeImage()
     setContent('')
     setFinalAnswer('')
     setError('')
     setCopyMsg('')
-  }
-
-  const askAnotherDoubt = () => {
-    setQuestion('')
-    removeImage()
-    setContent('')
-    setFinalAnswer('')
-    setError('')
-    setCopyMsg('')
+    if (!keepSelectors) {
+      setStudentClass('Class 8')
+      setSubject('Math')
+    }
   }
 
   const copyAnswer = async () => {
@@ -117,173 +178,269 @@ export default function App() {
     const text = `Question: ${question}\n\n${content}\n\nFinal Answer: ${finalAnswer}`
     try {
       await navigator.clipboard.writeText(text)
-      setCopyMsg('Answer copied!')
+      setCopyMsg('Copied!')
+      setTimeout(() => setCopyMsg(''), 2000)
     } catch {
-      setCopyMsg('Copy failed on this device/browser.')
+      setCopyMsg('Failed to copy.')
     }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-sky-100 via-white to-indigo-100 p-4 md:p-8">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white shadow-2xl">
-        <header className="rounded-t-3xl bg-blue-600 px-6 py-5 text-white md:px-8">
-          <h1 className="text-2xl font-bold md:text-3xl">Student Doubt Solver</h1>
-          <p className="mt-1 text-sm text-blue-100">Classes 6-12 • Simple Step-by-Step Answers</p>
+    <div style={{ minHeight: '100vh', background: 'var(--paper)' }} className="px-4 py-8 md:py-12">
+      <div className="mx-auto" style={{ maxWidth: '900px' }}>
+
+        {/* ── Header ─────────────────────────────────────── */}
+        <header className="mb-8 md:mb-10">
+          {/* Top accent stripe */}
+          <div
+            className="mb-6 h-px w-full rounded-full"
+            style={{ background: 'linear-gradient(90deg, transparent, var(--blue) 30%, var(--amber) 70%, transparent)' }}
+          />
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1
+                className="font-serif leading-none"
+                style={{ fontSize: 'clamp(26px, 5vw, 38px)', color: 'var(--ink)', fontStyle: 'italic' }}
+              >
+                Student Doubt Solver
+              </h1>
+              <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                Clear, step-by-step answers for Classes 6–12
+              </p>
+            </div>
+
+            {/* Badge */}
+            <div
+              className="flex-shrink-0 flex items-center gap-1.5 rounded-full border px-3 py-1.5"
+              style={{ borderColor: 'var(--border)', background: 'var(--surface)', fontSize: '12px', color: 'var(--ink-muted)' }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', flexShrink: 0 }} />
+              AI Powered
+            </div>
+          </div>
         </header>
 
-        <div className="grid gap-6 p-6 md:grid-cols-2 md:p-8">
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Select Class</label>
-              <select
-                value={studentClass}
-                onChange={(e) => setStudentClass(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-3 focus:border-blue-500 focus:outline-none"
-              >
-                {classOptions.map((opt) => <option key={opt}>{opt}</option>)}
-              </select>
-            </div>
+        {/* ── Main card ──────────────────────────────────── */}
+        <div
+          className="rounded-2xl border overflow-hidden"
+          style={{
+            borderColor: 'var(--border)',
+            background: 'var(--surface)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06)',
+          }}
+        >
+          <div className="grid md:grid-cols-2 md:divide-x" style={{ '--tw-divide-opacity': 1 }}>
 
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Select Subject</label>
-              <select
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-3 focus:border-blue-500 focus:outline-none"
-              >
-                {subjectOptions.map((opt) => <option key={opt}>{opt}</option>)}
-              </select>
-            </div>
+            {/* ── Left: Form ─────────────────────────────── */}
+            <form onSubmit={onSubmit} className="p-6 space-y-5 md:p-7">
 
-            {/* Question input with image attach button */}
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Your Question</label>
+              {/* Class + Subject row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Class</Label>
+                  <select
+                    value={studentClass}
+                    onChange={(e) => setStudentClass(e.target.value)}
+                    className="field-select"
+                  >
+                    {classOptions.map((opt) => <option key={opt}>{opt}</option>)}
+                  </select>
+                </div>
 
-              {/* Image thumbnail chip — shown above textarea when image is attached */}
-              {imagePreview && (
-                <div className="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-1 pr-2">
-                  <img
-                    src={imagePreview}
-                    alt="Attached"
-                    className="h-10 w-10 rounded-md object-cover"
+                <div>
+                  <Label>Board / Medium</Label>
+                  <select
+                    className="field-select"
+                    defaultValue="CBSE"
+                  >
+                    <option>CBSE</option>
+                    <option>ICSE</option>
+                    <option>State Board</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Subject chips */}
+              <div>
+                <Label>Subject</Label>
+                <div className="flex flex-wrap gap-2">
+                  {subjectOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setSubject(opt)}
+                      className={`subject-chip${subject === opt ? ' active' : ''}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Question textarea */}
+              <div>
+                <Label>
+                  Your Question
+                  {image && (
+                    <span className="ml-2 normal-case tracking-normal" style={{ color: 'var(--blue)', fontSize: '11px' }}>
+                      — image attached
+                    </span>
+                  )}
+                </Label>
+
+                {/* Image chip */}
+                {imagePreview && (
+                  <div className="img-chip mb-2">
+                    <img src={imagePreview} alt="Attached" className="img-chip-thumb" />
+                    <span className="img-chip-name">{image?.name || 'image'}</span>
+                    <button type="button" onClick={removeImage} className="img-chip-remove">✕</button>
+                  </div>
+                )}
+
+                {/* Textarea with attach icon */}
+                <div className="relative">
+                  <textarea
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder={
+                      image
+                        ? 'Add extra context, or leave empty…'
+                        : 'e.g. A train travels 120 km in 2 hours. Find speed.'
+                    }
+                    rows={5}
+                    className="field-textarea"
                   />
-                  <span className="max-w-[120px] truncate text-xs text-slate-600">{image?.name}</span>
+                  {/* Image attach button */}
                   <button
                     type="button"
-                    onClick={removeImage}
-                    className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-slate-300 text-slate-600 hover:bg-red-400 hover:text-white text-[10px] font-bold leading-none"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach image"
+                    className="absolute bottom-2.5 left-2.5 rounded-lg p-1.5 transition-colors"
+                    style={{
+                      color: image ? 'var(--blue)' : 'var(--ink-muted)',
+                      background: image ? 'var(--blue-light)' : 'transparent',
+                    }}
                   >
-                    ✕
+                    <IconImage />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageSelect(e.target.files?.[0])}
+                  />
+                </div>
+                <p className="mt-1 text-[11px]" style={{ color: 'var(--ink-muted)' }}>
+                  {image ? 'gpt-4o vision will read your image' : 'Type your doubt or attach a photo of the question'}
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={!canSubmit} className="btn-primary">
+                  {loading ? <><Spinner />Solving…</> : <><IconSend />Get Answer</>}
+                </button>
+                <button type="button" onClick={() => resetAll(true)} className="btn-ghost">
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            {/* ── Right: Answer ───────────────────────────── */}
+            <section className="flex flex-col p-6 md:p-7" style={{ background: 'var(--paper)', minHeight: '420px' }}>
+
+              {/* Answer header */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ink-muted)' }}>
+                  Answer
+                </span>
+                {content && (
+                  <button
+                    type="button"
+                    onClick={copyAnswer}
+                    className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-colors fade-in"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: copyMsg ? 'var(--green)' : 'var(--ink-soft)',
+                      background: 'var(--surface)',
+                    }}
+                  >
+                    <IconCopy />
+                    {copyMsg || 'Copy'}
+                  </button>
+                )}
+              </div>
+
+              {/* Thin divider */}
+              <div className="mb-4 h-px" style={{ background: 'var(--border)' }} />
+
+              {/* States */}
+              {loading && <Skeleton />}
+
+              {!loading && !content && !error && (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 fade-in">
+                  <div style={{ color: 'var(--border)' }}><IconSparkle /></div>
+                  <p className="text-center text-sm" style={{ color: 'var(--ink-muted)', maxWidth: '200px', lineHeight: 1.6 }}>
+                    Your answer will appear here once you submit a question.
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div
+                  className="rounded-xl border px-4 py-3 text-sm fade-in"
+                  style={{ borderColor: 'var(--red)', background: 'var(--red-light)', color: 'var(--red)' }}
+                >
+                  {error}
+                </div>
+              )}
+
+              {!loading && content && (
+                <div className="flex flex-col gap-4 answer-reveal">
+
+                  {/* Markdown answer */}
+                  <div className="answer-prose">
+                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {content}
+                    </ReactMarkdown>
+                  </div>
+
+                  {/* Final answer highlight */}
+                  <div
+                    className="rounded-xl border-l-4 px-4 py-3"
+                    style={{
+                      borderLeftColor: 'var(--amber)',
+                      background: 'var(--amber-light)',
+                    }}
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'var(--amber)' }}>
+                      Final Answer
+                    </p>
+                    <div className="answer-prose text-sm" style={{ color: 'var(--ink)' }}>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {finalAnswer}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+
+                  {/* Ask another */}
+                  <button type="button" onClick={() => resetAll(true)} className="btn-subtle">
+                    Ask Another Doubt →
                   </button>
                 </div>
               )}
-
-              {/* Textarea + image icon button row */}
-              <div className="relative">
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={image ? 'Add context or leave empty…' : 'Example: A train travels 120 km in 2 hours. Find speed.'}
-                  className="h-32 w-full rounded-xl border border-slate-300 p-3 pb-10 focus:border-blue-500 focus:outline-none resize-none"
-                />
-                {/* Image attach icon — bottom-left inside textarea */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Attach image"
-                  className={`absolute bottom-2.5 left-2.5 rounded-lg p-1.5 transition-colors
-                    ${image ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100'}`}
-                >
-                  <ImageIcon />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleImageSelect(e.target.files?.[0])}
-                />
-              </div>
-              <p className="mt-1 text-xs text-slate-400">
-                {image ? 'Image attached — text is optional' : 'Type your question or attach an image'}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                disabled={!canSubmit}
-                className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-              >
-                {loading ? 'Solving...' : 'Get Answer'}
-              </button>
-              <button
-                type="button"
-                onClick={clearAll}
-                className="rounded-xl border border-slate-300 px-4 py-3 font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Clear
-              </button>
-            </div>
-          </form>
-
-          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold text-slate-800">Answer Area</h2>
-              {!!content && (
-                <button
-                  type="button"
-                  onClick={copyAnswer}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white"
-                >
-                  Copy Answer
-                </button>
-              )}
-            </div>
-
-            {loading && (
-              <div className="mt-4 animate-pulse space-y-3">
-                <div className="h-4 w-11/12 rounded bg-slate-200" />
-                <div className="h-4 w-10/12 rounded bg-slate-200" />
-                <div className="h-4 w-9/12 rounded bg-slate-200" />
-              </div>
-            )}
-
-            {!loading && !content && (
-              <p className="mt-3 text-sm text-slate-600">
-                Your step-by-step answer will appear here after you submit a question.
-              </p>
-            )}
-
-            {!loading && content && (
-              <>
-                <div className="prose prose-sm mt-4 max-w-none text-slate-800 prose-headings:text-slate-900 prose-headings:font-bold prose-strong:text-slate-900 prose-ol:pl-5 prose-ul:pl-5 prose-li:my-1">
-                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                    {content}
-                  </ReactMarkdown>
-                </div>
-                <div className="mt-4 rounded-xl bg-green-50 p-3 text-green-900">
-                  <p className="text-sm font-semibold">Final Answer</p>
-                  <div className="prose prose-sm max-w-none text-green-900">
-                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                      {finalAnswer}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={askAnotherDoubt}
-                  className="mt-4 w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
-                >
-                  Ask Another Doubt
-                </button>
-              </>
-            )}
-
-            {copyMsg && <p className="mt-3 text-xs text-emerald-700">{copyMsg}</p>}
-            {error && <p className="mt-3 text-sm text-amber-700">{error}</p>}
-          </section>
+            </section>
+          </div>
         </div>
+
+        {/* ── Footer ─────────────────────────────────────── */}
+        <p className="mt-6 text-center text-[12px]" style={{ color: 'var(--ink-muted)' }}>
+          Classes 6–12 · CBSE · ICSE · State Board &nbsp;·&nbsp; Add your OpenAI key to <code style={{ fontSize: '11px' }}>.env</code> for live answers
+        </p>
+
       </div>
-    </main>
+    </div>
   )
 }
