@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 
 const classOptions = ['Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12']
 const subjectOptions = ['Math', 'Science', 'English', 'Social Science', 'Hindi', 'Computer']
-
-const parseAnswerToSteps = (steps) => {
-  if (Array.isArray(steps) && steps.length) return steps
-  return ['Sorry, I could not generate a clear answer. Please try again.']
-}
 
 async function getAnswerFromBackend({ studentClass, subject, question }) {
   const res = await fetch('/api/solve', {
@@ -15,13 +14,11 @@ async function getAnswerFromBackend({ studentClass, subject, question }) {
     body: JSON.stringify({ studentClass, subject, question }),
   })
 
-  if (!res.ok) {
-    throw new Error('Request failed')
-  }
+  if (!res.ok) throw new Error('Request failed')
 
   const data = await res.json()
   return {
-    steps: parseAnswerToSteps(data.steps),
+    content: data.content || '',
     finalAnswer: data.finalAnswer || 'Final answer not available.',
   }
 }
@@ -30,7 +27,7 @@ export default function App() {
   const [studentClass, setStudentClass] = useState('Class 8')
   const [subject, setSubject] = useState('Math')
   const [question, setQuestion] = useState('')
-  const [steps, setSteps] = useState([])
+  const [content, setContent] = useState('')
   const [finalAnswer, setFinalAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -48,11 +45,11 @@ export default function App() {
 
     try {
       const result = await getAnswerFromBackend({ studentClass, subject, question: question.trim() })
-      setSteps(result.steps)
+      setContent(result.content)
       setFinalAnswer(result.finalAnswer)
     } catch {
       setError('Could not generate answer right now. Please try again.')
-      setSteps([])
+      setContent('')
       setFinalAnswer('')
     } finally {
       setLoading(false)
@@ -61,7 +58,7 @@ export default function App() {
 
   const clearAll = () => {
     setQuestion('')
-    setSteps([])
+    setContent('')
     setFinalAnswer('')
     setError('')
     setCopyMsg('')
@@ -69,17 +66,15 @@ export default function App() {
 
   const askAnotherDoubt = () => {
     setQuestion('')
-    setSteps([])
+    setContent('')
     setFinalAnswer('')
     setError('')
     setCopyMsg('')
   }
 
   const copyAnswer = async () => {
-    if (!steps.length) return
-
-    const text = `Question: ${question}\n\nSteps:\n${steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nFinal Answer: ${finalAnswer}`
-
+    if (!content) return
+    const text = `Question: ${question}\n\n${content}\n\nFinal Answer: ${finalAnswer}`
     try {
       await navigator.clipboard.writeText(text)
       setCopyMsg('Answer copied!')
@@ -158,7 +153,7 @@ export default function App() {
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-lg font-bold text-slate-800">Answer Area</h2>
-              {!!steps.length && (
+              {!!content && (
                 <button
                   type="button"
                   onClick={copyAnswer}
@@ -177,23 +172,39 @@ export default function App() {
               </div>
             )}
 
-            {!loading && steps.length === 0 && (
+            {!loading && !content && (
               <p className="mt-3 text-sm text-slate-600">
                 Your step-by-step answer will appear here after you submit a question.
               </p>
             )}
 
-            {!loading && steps.length > 0 && (
+            {!loading && content && (
               <>
-                <ol className="mt-4 list-decimal space-y-2 pl-5 text-slate-800">
-                  {steps.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ol>
+                <div className="prose prose-sm mt-4 max-w-none text-slate-800
+                  prose-headings:text-slate-900 prose-headings:font-bold
+                  prose-strong:text-slate-900
+                  prose-ol:pl-5 prose-ul:pl-5
+                  prose-li:my-1">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                  >
+                    {content}
+                  </ReactMarkdown>
+                </div>
+
                 <div className="mt-4 rounded-xl bg-green-50 p-3 text-green-900">
                   <p className="text-sm font-semibold">Final Answer</p>
-                  <p className="text-sm">{finalAnswer}</p>
+                  <div className="prose prose-sm max-w-none text-green-900">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {finalAnswer}
+                    </ReactMarkdown>
+                  </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={askAnotherDoubt}
