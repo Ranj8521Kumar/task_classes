@@ -22,14 +22,20 @@ async function getAnswerFromBackend({ studentClass, subject, question, image }) 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ studentClass, subject, question, image }),
   })
-
   if (!res.ok) throw new Error('Request failed')
-
   const data = await res.json()
   return {
     content: data.content || '',
     finalAnswer: data.finalAnswer || 'Final answer not available.',
   }
+}
+
+function ImageIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  )
 }
 
 export default function App() {
@@ -43,7 +49,6 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copyMsg, setCopyMsg] = useState('')
-  const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef(null)
 
   const canSubmit = useMemo(
@@ -64,27 +69,14 @@ export default function App() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const onDrop = (e) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    handleImageSelect(file)
-  }
-
   const onSubmit = async (e) => {
     e.preventDefault()
     if (!canSubmit) return
-
     setLoading(true)
     setError('')
     setCopyMsg('')
-
     try {
-      let imageBase64 = null
-      if (image) {
-        imageBase64 = await fileToBase64(image)
-      }
-
+      const imageBase64 = image ? await fileToBase64(image) : null
       const result = await getAnswerFromBackend({
         studentClass,
         subject,
@@ -148,9 +140,7 @@ export default function App() {
                 onChange={(e) => setStudentClass(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 p-3 focus:border-blue-500 focus:outline-none"
               >
-                {classOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
+                {classOptions.map((opt) => <option key={opt}>{opt}</option>)}
               </select>
             </div>
 
@@ -161,63 +151,62 @@ export default function App() {
                 onChange={(e) => setSubject(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 p-3 focus:border-blue-500 focus:outline-none"
               >
-                {subjectOptions.map((opt) => (
-                  <option key={opt}>{opt}</option>
-                ))}
+                {subjectOptions.map((opt) => <option key={opt}>{opt}</option>)}
               </select>
             </div>
 
+            {/* Question input with image attach button */}
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
-                Your Question{image && <span className="ml-1 font-normal text-slate-400">(optional if image uploaded)</span>}
-              </label>
-              <textarea
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder={image ? 'Add extra context or leave empty…' : 'Example: A train travels 120 km in 2 hours. Find speed.'}
-                className="h-28 w-full rounded-xl border border-slate-300 p-3 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Your Question</label>
 
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">
-                Upload Question Image
-                <span className="ml-1 font-normal text-slate-400">(optional)</span>
-              </label>
-
-              {!imagePreview ? (
-                <label
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={onDrop}
-                  className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 transition-colors
-                    ${dragOver ? 'border-blue-400 bg-blue-50' : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50'}`}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageSelect(e.target.files?.[0])}
+              {/* Image thumbnail chip — shown above textarea when image is attached */}
+              {imagePreview && (
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-1 pr-2">
+                  <img
+                    src={imagePreview}
+                    alt="Attached"
+                    className="h-10 w-10 rounded-md object-cover"
                   />
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-sm text-slate-500">Click to upload or drag & drop</span>
-                  <span className="text-xs text-slate-400">JPG, PNG, WEBP supported</span>
-                </label>
-              ) : (
-                <div className="relative overflow-hidden rounded-xl border border-slate-200">
-                  <img src={imagePreview} alt="Question" className="max-h-48 w-full object-contain bg-slate-50" />
+                  <span className="max-w-[120px] truncate text-xs text-slate-600">{image?.name}</span>
                   <button
                     type="button"
                     onClick={removeImage}
-                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-slate-800/70 text-white hover:bg-red-500 text-xs font-bold"
+                    className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-slate-300 text-slate-600 hover:bg-red-400 hover:text-white text-[10px] font-bold leading-none"
                   >
                     ✕
                   </button>
                 </div>
               )}
+
+              {/* Textarea + image icon button row */}
+              <div className="relative">
+                <textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder={image ? 'Add context or leave empty…' : 'Example: A train travels 120 km in 2 hours. Find speed.'}
+                  className="h-32 w-full rounded-xl border border-slate-300 p-3 pb-10 focus:border-blue-500 focus:outline-none resize-none"
+                />
+                {/* Image attach icon — bottom-left inside textarea */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Attach image"
+                  className={`absolute bottom-2.5 left-2.5 rounded-lg p-1.5 transition-colors
+                    ${image ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100'}`}
+                >
+                  <ImageIcon />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageSelect(e.target.files?.[0])}
+                />
+              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                {image ? 'Image attached — text is optional' : 'Type your question or attach an image'}
+              </p>
             </div>
 
             <div className="flex gap-2">
@@ -235,10 +224,6 @@ export default function App() {
                 Clear
               </button>
             </div>
-
-            <p className="text-xs text-slate-500">
-              Tip: Upload a photo of your textbook question for instant answers.
-            </p>
           </form>
 
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -276,7 +261,6 @@ export default function App() {
                     {content}
                   </ReactMarkdown>
                 </div>
-
                 <div className="mt-4 rounded-xl bg-green-50 p-3 text-green-900">
                   <p className="text-sm font-semibold">Final Answer</p>
                   <div className="prose prose-sm max-w-none text-green-900">
@@ -285,7 +269,6 @@ export default function App() {
                     </ReactMarkdown>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={askAnotherDoubt}
